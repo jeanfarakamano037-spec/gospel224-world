@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, Response
 import json, os, uuid
 from werkzeug.utils import secure_filename
 
@@ -20,11 +20,43 @@ def get_cover(s):
     if s.get("cover_file"): return f"/uploads/{s['cover_file']}"
     return s.get("cover_url") or s.get("cover") or "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600"
 
+@app.route("/manifest.json")
+def manifest():
+    return jsonify({
+        "name": "GOSPEL224 WORLD",
+        "short_name": "GOSPEL224",
+        "description": "La plateforme officielle des chantres de Guinée",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#000000",
+        "theme_color": "#f9c00f",
+        "orientation": "portrait",
+        "icons": [
+            {"src": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=192", "sizes": "192x192", "type": "image/png"},
+            {"src": "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=512", "sizes": "512x512", "type": "image/png"}
+        ]
+    })
+
+@app.route("/sw.js")
+def sw():
+    js = """
+    self.addEventListener('install', e => self.skipWaiting());
+    self.addEventListener('activate', e => self.clients.claim());
+    self.addEventListener('fetch', e => {
+      e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    });
+    """
+    return Response(js, mimetype="application/javascript")
+
 @app.route("/")
 def home():
     return """
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GOSPEL224 WORLD</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f9c00f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GOSPEL224">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}body{background:#050505;color:#fff;font-family:'Inter',Arial;padding-bottom:110px;overflow-x:hidden}
@@ -36,9 +68,11 @@ def home():
 .nav{display:flex;gap:8px;overflow-x:auto;padding:0 15px 14px;background:#0a0a0a;position:sticky;top:58px;z-index:10}
 .nav button{background:#151515;color:#888;border:1px solid #222;padding:8px 18px;border-radius:25px;white-space:nowrap;font-size:12px;font-weight:700}
 .nav button.active{background:#f9c00f;color:#000;border-color:#f9c00f}
+.install-banner{display:none;background:linear-gradient(90deg,#f9c00f,#ff8c00);color:#000;padding:14px 16px;margin:12px 14px;border-radius:14px;justify-content:space-between;align-items:center;font-weight:900;font-size:13px}
+.install-banner.show{display:flex}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;padding:16px}
 .card{background:#101010;border-radius:18px;overflow:hidden;border:1px solid #1a1a1a;cursor:pointer;transition:0.3s}
-.card:hover{transform:translateY(-6px);border-color:#f9c00f;box-shadow:0 10px 30px rgba(249,192,15,0.15)}
+.card:hover{transform:translateY(-6px);border-color:#f9c00f}
 .card img{width:100%;height:165px;object-fit:cover}
 .card-info{padding:12px}
 .card h4{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -59,9 +93,8 @@ def home():
 input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px solid #222;background:#111;color:#fff;outline:none}
 .player{position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,10,0.97);backdrop-filter:blur(20px);border-top:1px solid #222;padding:12px 15px;display:flex;align-items:center;gap:14px;z-index:50}
 .player img{width:56px;height:56px;border-radius:10px}
-.btn{font-size:11px;padding:7px 14px;border-radius:20px;border:none;font-weight:700;cursor:pointer;transition:0.2s}
+.btn{font-size:11px;padding:7px 14px;border-radius:20px;border:none;font-weight:700;cursor:pointer}
 .btn-down{background:#f9c00f;color:#000}
-.btn-down:hover{background:#fff}
 .btn-dark{background:#1e1e1e;color:#fff;border:1px solid #333}
 .btn-immersif{background:linear-gradient(135deg,#f9c00f,#ff8c00);color:#000}
 .amen-wall{max-height:90px;overflow-y:auto;background:#050505;border-radius:12px;padding:8px;margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
@@ -83,6 +116,13 @@ input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px 
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 </style></head><body>
 <div class="header"><h1>GOSPEL224 WORLD</h1><p>Plateforme Officielle</p></div>
+
+<div class="install-banner" id="installBanner">
+<span>📲 Installer GOSPEL224 WORLD sur ton téléphone?</span>
+<div><button onclick="installApp()" style="background:#000;color:#f9c00f;padding:8px 16px;border-radius:20px;border:none;font-weight:900;margin-right:8px">INSTALLER</button>
+<button onclick="hideBanner()" style="background:transparent;color:#000;border:1px solid #000;padding:6px 12px;border-radius:20px">Plus tard</button></div>
+</div>
+
 <div class="topbar"><input id="search" placeholder="Rechercher un chant, un artiste..." oninput="doSearch()"><span id="count" style="font-size:11px;color:#555"></span></div>
 <div class="nav">
 <button class="active" onclick="filterType('ALL',this)">TOUT</button>
@@ -92,12 +132,10 @@ input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px 
 <button onclick="filterType('MIXTAPE',this)">MIXTAPE</button>
 <button onclick="filterType('ALBUM',this)">ALBUM</button>
 </div>
-
 <div class="section"><div class="section-title">Armure • Ephesiens 6</div><div class="armor-bar" id="armorBar"></div></div>
 <div class="section"><div class="section-title"><span class="liveDot"></span>Guinée en Direct</div><div class="map-guinee" id="guineeMap"></div></div>
 <div style="margin:0 14px;background:linear-gradient(90deg,#111,#1a1500);border:1px solid #2a2200;padding:12px;border-radius:14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;color:#f9c00f;font-weight:700" id="liveStats">Chargement...</span><span style="font-size:10px;color:#555">LIVE</span></div>
 <div class="grid" id="grid"></div>
-
 <div class="uploadBox">
 <div class="section-title">Espace Chantres</div>
 <input id="title" placeholder="Titre du chant"><input id="artist" placeholder="Nom de l'artiste">
@@ -108,7 +146,6 @@ input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px 
 <button onclick="upload()" style="width:100%;background:#f9c00f;padding:14px;border-radius:30px;font-weight:900;margin-top:12px;border:none;color:#000">PUBLIER</button>
 <p id="status" style="margin-top:10px;font-size:12px;text-align:center;color:#888"></p>
 </div>
-
 <div class="player" id="player" style="display:none">
 <img id="pCover" src=""><div style="flex:1;min-width:0"><b id="pTitle" style="font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b><small id="pArtist" style="color:#666;font-size:11px"></small>
 <audio id="audio" controls style="width:100%;height:28px;margin-top:6px"></audio>
@@ -117,9 +154,7 @@ input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px 
 <button onclick="enterRoyaume()" class="btn btn-immersif">👑 IMMERSIF</button>
 <button onclick="pray()" class="btn btn-dark">🙏 PRIER</button>
 <button onclick="amen()" class="btn btn-dark">AMEN 🔥</button>
-<button onclick="shareTo('whatsapp')" class="btn btn-dark">WA</button>
 </div><div id="amenWall" class="amen-wall" style="display:none"></div></div></div>
-
 <div id="royaumeMode">
 <div class="royaume-bg" id="royaumeBg"></div><div class="cross-glow">✝️</div><div class="particles" id="particles"></div>
 <div class="royaume-content">
@@ -133,10 +168,19 @@ input,select{width:100%;padding:12px;margin:7px 0;border-radius:12px;border:1px 
 </div>
 <p style="margin-top:20px;font-size:10px;color:#555;letter-spacing:2px"><span id="rPrayers">0</span> EN PRIÈRE • GOSPEL224 WORLD</p>
 </div></div>
-
 <div class="modal" id="artistModal"><div class="modal-content"><button onclick="closeArtist()" style="float:right;background:#1a1a1a;color:#fff;border:1px solid #333;padding:6px 14px;border-radius:20px">✕</button><div id="artistContent"></div></div></div>
 
 <script>
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+function installApp(){ if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; hideBanner(); }); } }
+function hideBanner(){ document.getElementById('installBanner').classList.remove('show'); }
+
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
+
 let allSongs=[]; let currentSong=null; let currentFile='';
 let verses=["JE SUIS DU ROYAUME","LE ROYAUME A VAINCU","AUCUNE ARME NE PROSPÉRERA","PLUS QUE VAINQUEUR","CHRIST EST ROI","LUMIÈRE DANS LES TÉNÈBRES"];
 let cities=["Conakry","Kindia","Labé","Kankan","Nzérékoré","Boké","Mamou","Faranah"];
@@ -167,8 +211,7 @@ async function playSong(id){
 function doSearch(){ let q=document.getElementById('search').value.toLowerCase(); if(!q) return render(allSongs); render(allSongs.filter(s=> (s.title+s.artist).toLowerCase().includes(q))); }
 function filterType(t,btn){ document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); if(t=='ALL') render(allSongs); else render(allSongs.filter(s=>(s.type||'SINGLE')==t)); }
 function download(){
- if(!currentFile || currentFile==""){ alert('⚠️ Ce chant n\\'a pas de fichier audio à télécharger. Uploade d\\'abord le MP3 de ROYAUME!'); return; }
- // TELECHARGEMENT DIRECT
+ if(!currentFile || currentFile==""){ alert('⚠️ Pas de fichier MP3 pour ce chant. Uploade le MP3!'); return; }
  let a=document.createElement('a'); a.href='/uploads/'+currentFile; a.download=currentSong.title+'.mp3'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 async function pray(){ if(!currentSong) return; let r=await fetch('/api/pray/'+currentSong.id,{method:'POST'}); let j=await r.json(); currentSong.prayers=j.total; render(allSongs); updateLive(); }
@@ -182,7 +225,6 @@ function showVerse(){ let v=verses[Math.floor(Math.random()*verses.length)]; doc
 function declareWar(){ showVerse(); let bg=document.getElementById('royaumeBg'); bg.style.filter='brightness(1.2)'; setTimeout(()=>bg.style.filter='brightness(0.35)',400); fetch('/api/pray/'+currentSong.id,{method:'POST'}); }
 function openArtist(artist){ let songs=allSongs.filter(s=>s.artist.toLowerCase()==artist.toLowerCase()); let html=`<div style="text-align:center"><img src="${getCover(songs[0])}" style="width:110px;height:110px;border-radius:50%;object-fit:cover;border:3px solid #f9c00f"><h2 style="margin:12px 0 5px">${artist}</h2><p style="color:#666;font-size:12px">${songs.length} chants • ${songs.reduce((a,b)=>a+(b.plays||0),0)} écoutes</p></div><hr style="border:0;border-top:1px solid #1a1a1a;margin:16px 0">`; songs.forEach(s=>{ html+=`<div style="display:flex;gap:12px;padding:12px;background:#0a0a0a;border-radius:12px;margin:8px 0;border:1px solid #151515" onclick="playSong('${s.id}');closeArtist()"><img src="${getCover(s)}" style="width:48px;height:48px;border-radius:8px"><div><b style="font-size:13px">${s.title}</b><br><small style="color:#666">${s.type} • ▶️ ${s.plays||0}</small></div></div>`; }); document.getElementById('artistContent').innerHTML=html; document.getElementById('artistModal').style.display='block'; }
 function closeArtist(){ document.getElementById('artistModal').style.display='none'; }
-function shareTo(p){ let url=encodeURIComponent(location.href); let text=encodeURIComponent('Écoute '+document.getElementById('pTitle').innerText+' sur GOSPEL224 WORLD'); if(p=='whatsapp') window.open('https://wa.me/?text='+text+'%20'+url); }
 async function upload(){ let title=document.getElementById('title').value; let artist=document.getElementById('artist').value; let type=document.getElementById('type').value; if(!title||!artist) return alert('Titre et artiste requis'); document.getElementById('status').innerText='Envoi...'; let fd=new FormData(); fd.append('title',title); fd.append('artist',artist); fd.append('type',type); fd.append('cover_url',document.getElementById('cover').value); let f=document.getElementById('file').files[0]; if(f) fd.append('file',f); let cf=document.getElementById('coverFile').files[0]; if(cf) fd.append('coverFile',cf); let r=await fetch('/upload',{method:'POST',body:fd}); let j=await r.json(); document.getElementById('status').innerText=j.message; if(j.success) load(); }
 load();
 </script></body></html>
