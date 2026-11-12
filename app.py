@@ -5,13 +5,13 @@ from werkzeug.utils import secure_filename
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-
 SONGS_FILE = "songs.json"
 
 def load_songs():
     if not os.path.exists(SONGS_FILE):
         return [{
-            "id":"1","title":"AIMEZ PRECHER JESUS","artist":"Jean Farakamano","type":"SINGLE","cover":"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300","file":"","plays":1240
+            "id":"1","title":"AIMEZ PRECHER JESUS","artist":"Jean Farakamano","type":"SINGLE",
+            "cover":"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300","file":"","plays":1240
         }]
     try:
         with open(SONGS_FILE,"r",encoding="utf-8") as f: return json.load(f)
@@ -25,32 +25,43 @@ def home():
     return """
 <!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GOSPEL224 WORLD - Spotify Guinée</title>
+<title>GOSPEL224 WORLD</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:Arial;padding-bottom:90px}
-.header{background:linear-gradient(#f9c00f,#000);padding:25px;text-align:center}
-.nav{display:flex;gap:10px;overflow-x:auto;padding:15px;background:#121212;position:sticky;top:0;z-index:10}
-.nav button{background:#2a2a2a;color:#fff;border:none;padding:8px 18px;border-radius:20px;white-space:nowrap}
+*{margin:0;padding:0;box-sizing:border-box}body{background:#000;color:#fff;font-family:Arial;padding-bottom:95px}
+.header{background:linear-gradient(180deg,#f9c00f 0%, #ff8c00 40%, #000 100%);padding:25px 15px;text-align:center}
+.header h1{font-size:28px;letter-spacing:1px;color:#000;text-shadow:0 1px 0 #fff3}
+.header p{color:#000;font-weight:bold;margin-top:5px;font-size:13px}
+.topbar{display:flex;gap:10px;padding:12px;background:#121212;position:sticky;top:0;z-index:20;align-items:center}
+.topbar input{flex:1;padding:10px 15px;border-radius:25px;background:#2a2a2a;border:none;color:#fff}
+.nav{display:flex;gap:8px;overflow-x:auto;padding:0 15px 12px;background:#121212;position:sticky;top:54px;z-index:10}
+.nav button{background:#2a2a2a;color:#fff;border:none;padding:7px 16px;border-radius:20px;white-space:nowrap;font-size:13px}
 .nav button.active{background:#f9c00f;color:#000;font-weight:bold}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;padding:15px}
-.card{background:#181818;padding:12px;border-radius:10px;transition:0.2s;cursor:pointer}
-.card:hover{background:#282828}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:15px}
+.card{background:#181818;padding:10px;border-radius:12px;cursor:pointer;transition:0.2s}
+.card:hover{background:#282828;transform:translateY(-3px)}
 .card img{width:100%;height:150px;object-fit:cover;border-radius:8px}
-.card h4{margin:8px 0 3px;color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.card p{color:#aaa;font-size:12px}
-.actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.btn-mini{font-size:11px;padding:5px 10px;border-radius:15px;border:none;cursor:pointer}
-.btn-play{background:#1DB954;color:#000;font-weight:bold}
-.btn-down{background:#333;color:#fff}
-.btn-share{background:#f9c00f;color:#000}
-.player{position:fixed;bottom:0;left:0;right:0;background:#181818;border-top:1px solid #333;padding:10px 15px;display:flex;align-items:center;gap:15px}
-.player img{width:50px;height:50px;border-radius:5px}
-.progress{flex:1}
-.ad{background:linear-gradient(90deg,#ff8c00,#f9c00f);color:#000;padding:10px;text-align:center;margin:15px;border-radius:8px;font-weight:bold}
-.uploadBox{background:#121212;margin:15px;padding:20px;border-radius:15px;border:1px dashed #f9c00f}
-input,select{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;background:#2a2a2a;color:#fff}
+.card h4{margin:8px 0 2px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card p{color:#aaa;font-size:12px;cursor:pointer}
+.card p:hover{color:#f9c00f;text-decoration:underline}
+.badge{font-size:10px;background:#f9c00f;color:#000;padding:2px 6px;border-radius:10px;font-weight:bold}
+.ad{background:linear-gradient(90deg,#ff8c00,#f9c00f);color:#000;padding:10px;text-align:center;margin:12px 15px;border-radius:10px;font-weight:bold;font-size:13px}
+.uploadBox{background:#121212;margin:15px;padding:18px;border-radius:15px;border:1px dashed #f9c00f}
+input,select{width:100%;padding:10px;margin:6px 0;border-radius:8px;border:none;background:#2a2a2a;color:#fff}
+.player{position:fixed;bottom:0;left:0;right:0;background:#181818;border-top:1px solid #333;padding:10px 15px;display:flex;align-items:center;gap:12px;z-index:50}
+.player img{width:52px;height:52px;border-radius:6px}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:100;display:none;overflow-y:auto;padding:20px}
+.modal-content{background:#121212;border-radius:15px;padding:20px;max-width:600px;margin:20px auto}
+.close{float:right;background:#333;color:#fff;border:none;padding:5px 12px;border-radius:15px;cursor:pointer}
 </style></head><body>
-<div class="header"><h1>🎤 GOSPEL224 WORLD</h1><p>LE SPOTIFY GOSPEL DE GUINÉE 🇬🇳</p></div>
+<div class="header">
+<h1>🎤 GOSPEL224 WORLD</h1>
+<p>LA PLATEFORME OFFICIELLE DES CHANTRES DE GUINÉE 🇬🇳</p>
+</div>
+
+<div class="topbar">
+<input id="search" placeholder="🔍 Rechercher un chant, un artiste..." oninput="doSearch()">
+<span id="count" style="font-size:12px;color:#aaa"></span>
+</div>
 
 <div class="nav">
 <button class="active" onclick="filterType('ALL',this)">TOUT</button>
@@ -61,60 +72,85 @@ input,select{width:100%;padding:10px;margin:5px 0;border-radius:8px;border:none;
 <button onclick="filterType('ALBUM',this)">ALBUM</button>
 </div>
 
-<div class="ad">📢 PUB: Promouvez votre chant ici! Contact Gospel224 WhatsApp - 50 000 GNF / semaine!</div>
+<div class="ad">📢 PROMO: Mets ton chant en avant ici! Contact Gospel224 WhatsApp - 50 000 GNF / semaine!</div>
 
-<div class="grid" id="grid">Chargement...</div>
+<div class="grid" id="grid"></div>
 
 <div class="uploadBox">
-<h3 style="color:#f9c00f">⬆️ UPLOADER (Chantres)</h3>
-<input id="title" placeholder="Titre">
-<input id="artist" placeholder="Artiste">
+<h3 style="color:#f9c00f;margin-bottom:10px">⬆️ UPLOADER - Espace Chantres</h3>
+<input id="title" placeholder="Titre du chant"><input id="artist" placeholder="Nom de l'artiste">
 <select id="type"><option>SINGLE</option><option>EP</option><option>COVER</option><option>MIXTAPE</option><option>ALBUM</option></select>
-<input id="file" type="file" accept="audio/*"><input id="cover" placeholder="Lien image cover (optionnel)">
-<button onclick="upload()" style="width:100%;background:#f9c00f;padding:12px;border-radius:25px;font-weight:bold;margin-top:10px;border:none">PUBLIER MAINTENANT</button>
-<p id="status"></p>
+<input id="file" type="file" accept="audio/*"><input id="cover" placeholder="Lien image cover (optionnel - laisse vide pour auto)">
+<button onclick="upload()" style="width:100%;background:#f9c00f;padding:12px;border-radius:25px;font-weight:bold;margin-top:8px;border:none;color:#000">PUBLIER MAINTENANT 🚀</button>
+<p id="status" style="margin-top:8px;font-size:13px"></p>
 </div>
 
 <div class="player" id="player" style="display:none">
-<img id="pCover" src=""><div><b id="pTitle"></b><br><small id="pArtist"></small></div>
-<div class="progress"><audio id="audio" controls style="width:100%"></audio><div style="display:flex;gap:5px;margin-top:5px">
-<button class="btn-mini btn-share" onclick="share()">PARTAGER ↗️</button>
-<button class="btn-mini btn-down" onclick="download()">TÉLÉCHARGER ⬇️</button>
-<button class="btn-mini btn-down" onclick="shareTo('facebook')">Facebook</button>
-<button class="btn-mini btn-down" onclick="shareTo('whatsapp')">WhatsApp</button>
+<img id="pCover" src=""><div style="flex:1;min-width:0"><b id="pTitle" style="font-size:14px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></b><small id="pArtist" style="color:#aaa"></small><br>
+<audio id="audio" controls style="width:100%;height:28px;margin-top:4px"></audio>
+<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+<button onclick="share()" style="font-size:11px;padding:4px 10px;border-radius:15px;border:none;background:#f9c00f;color:#000">PARTAGER ↗️</button>
+<button onclick="download()" style="font-size:11px;padding:4px 10px;border-radius:15px;border:none;background:#333;color:#fff">TÉLÉCHARGER ⬇️</button>
+<button onclick="shareTo('whatsapp')" style="font-size:11px;padding:4px 10px;border-radius:15px;border:none;background:#25D366;color:#fff">WhatsApp</button>
+<button onclick="shareTo('facebook')" style="font-size:11px;padding:4px 10px;border-radius:15px;border:none;background:#1877F2;color:#fff">Facebook</button>
 </div></div></div>
 
+<!-- MODAL ARTISTE -->
+<div class="modal" id="artistModal">
+<div class="modal-content">
+<button class="close" onclick="closeArtist()">X Fermer</button>
+<div id="artistContent"></div>
+</div>
+</div>
+
 <script>
-let allSongs=[]; let currentFile='';
+let allSongs=[]; let currentSong=null; let currentFile='';
 async function load(){
- let r=await fetch('/api/songs'); allSongs=await r.json(); render(allSongs);
+ let r=await fetch('/api/songs'); allSongs=await r.json();
+ document.getElementById('count').innerText=allSongs.length+' chants'; render(allSongs);
 }
 function render(list){
  let h=''; list.forEach(s=>{
-  h+=`<div class="card" onclick="playSong('${s.id}')">
-  <img src="${s.cover||'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300'}">
-  <h4>${s.title}</h4><p>${s.artist} • ${s.type}</p>
-  <div class="actions"><span style="font-size:11px;color:#aaa">▶️ ${s.plays||0}</span><span style="font-size:11px;background:#f9c00f;color:#000;padding:2px 6px;border-radius:10px">${s.type}</span></div>
-  </div>`;
- }); document.getElementById('grid').innerHTML=h||'<p style="padding:20px">Aucun chant dans cette catégorie</p>';
+  let cover=s.cover||'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300';
+  h+=`<div class="card"><div onclick="playSong('${s.id}')"><img src="${cover}"><h4>${s.title}</h4></div>
+  <p onclick="openArtist('${s.artist.replace(/'/g,"\\'")}')">${s.artist}</p>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><span style="font-size:11px;color:#aaa">▶️ ${s.plays||0} écoutes</span><span class="badge">${s.type||'SINGLE'}</span></div></div>`;
+ }); document.getElementById('grid').innerHTML=h||'<p style="padding:20px;color:#aaa">Aucun résultat</p>';
+}
+function doSearch(){
+ let q=document.getElementById('search').value.toLowerCase();
+ if(!q) return render(allSongs);
+ render(allSongs.filter(s=> (s.title+s.artist).toLowerCase().includes(q)));
 }
 function filterType(t,btn){
  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active')); btn.classList.add('active');
- if(t=='ALL') render(allSongs); else render(allSongs.filter(s=>s.type==t));
+ if(t=='ALL') render(allSongs); else render(allSongs.filter(s=>(s.type||'SINGLE')==t));
 }
-function playSong(id){
- let s=allSongs.find(x=>x.id==id); if(!s) return;
+async function playSong(id){
+ let s=allSongs.find(x=>x.id==id); if(!s) return; currentSong=s; currentFile=s.file;
  document.getElementById('player').style.display='flex';
  document.getElementById('pCover').src=s.cover||'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300';
  document.getElementById('pTitle').innerText=s.title; document.getElementById('pArtist').innerText=s.artist;
- currentFile=s.file; if(s.file){ document.getElementById('audio').src='/uploads/'+s.file; document.getElementById('audio').play(); }
+ if(s.file){ document.getElementById('audio').src='/uploads/'+s.file; document.getElementById('audio').play(); }
+ // 2. COMPTEUR REEL
+ fetch('/api/play/'+id,{method:'POST'}).then(()=>{ s.plays=(s.plays||0)+1; render(allSongs); });
 }
-function share(){ if(navigator.share){navigator.share({title:document.getElementById('pTitle').innerText,text:'Écoute sur Gospel224 WORLD',url:location.href})} else {alert('Lien copié: '+location.href); navigator.clipboard.writeText(location.href)} }
-function download(){ if(!currentFile) return alert('Pas de fichier à télécharger'); window.location='/uploads/'+currentFile; }
-function shareTo(p){ let url=encodeURIComponent(location.href); let text=encodeURIComponent('Écoute '+document.getElementById('pTitle').innerText+' sur Gospel224 WORLD 🔥'); if(p=='whatsapp') window.open('https://wa.me/?text='+text+'%20'+url); if(p=='facebook') window.open('https://www.facebook.com/sharer/sharer.php?u='+url); }
+function share(){ if(navigator.share){navigator.share({title:currentSong.title,text:'Écoute sur GOSPEL224 WORLD',url:location.href})} else {navigator.clipboard.writeText(location.href); alert('Lien copié!');} }
+function download(){ if(!currentFile) return alert('Pas de fichier à télécharger - uploade un MP3 d\\'abord'); window.location='/uploads/'+currentFile; }
+function shareTo(p){ let url=encodeURIComponent(location.href); let text=encodeURIComponent('🎤 Écoute '+document.getElementById('pTitle').innerText+' sur GOSPEL224 WORLD 🔥'); if(p=='whatsapp') window.open('https://wa.me/?text='+text+'%20'+url); if(p=='facebook') window.open('https://www.facebook.com/sharer/sharer.php?u='+url); }
+
+// 3. PAGE ARTISTE
+function openArtist(artist){
+ let songs=allSongs.filter(s=>s.artist.toLowerCase()==artist.toLowerCase());
+ let html=`<div style="text-align:center;padding:20px 0"><img src="${songs[0]?.cover||'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=300'}" style="width:120px;height:120px;border-radius:50%;object-fit:cover"><h2 style="margin:15px 0 5px">${artist}</h2><p style="color:#aaa">${songs.length} chants • ${(songs.reduce((a,b)=>a+(b.plays||0),0))} écoutes totales</p><button style="margin-top:15px;background:#f9c00f;color:#000;padding:8px 20px;border-radius:20px;border:none;font-weight:bold" onclick="share()">Partager l'artiste</button></div><hr style="border:0;border-top:1px solid #333;margin:15px 0"><h3>Chants de ${artist}</h3><div style="margin-top:10px">`;
+ songs.forEach(s=>{ html+=`<div style="display:flex;gap:10px;padding:10px;background:#1e1e1e;border-radius:8px;margin:8px 0" onclick="playSong('${s.id}');closeArtist()"><img src="${s.cover||''}" style="width:50px;height:50px;border-radius:5px;object-fit:cover"><div><b>${s.title}</b><br><small style="color:#aaa">${s.type} • ▶️ ${s.plays||0}</small></div></div>`; });
+ html+=`</div>`; document.getElementById('artistContent').innerHTML=html; document.getElementById('artistModal').style.display='block';
+}
+function closeArtist(){ document.getElementById('artistModal').style.display='none'; }
+
 async function upload(){
  let title=document.getElementById('title').value; let artist=document.getElementById('artist').value; let type=document.getElementById('type').value;
- if(!title||!artist) return alert('Titre et artiste requis'); document.getElementById('status').innerText='Envoi...';
+ if(!title||!artist) return alert('Titre et artiste requis'); document.getElementById('status').innerText='Envoi en cours...';
  let fd=new FormData(); fd.append('title',title); fd.append('artist',artist); fd.append('type',type);
  fd.append('cover',document.getElementById('cover').value); let f=document.getElementById('file').files[0]; if(f) fd.append('file',f);
  let r=await fetch('/upload',{method:'POST',body:fd}); let j=await r.json(); document.getElementById('status').innerText=j.message; if(j.success) load();
@@ -125,6 +161,16 @@ load();
 
 @app.route("/api/songs")
 def api(): return jsonify(load_songs())
+
+@app.route("/api/play/<song_id>", methods=["POST"])
+def play(song_id):
+    songs=load_songs()
+    for s in songs:
+        if s["id"]==song_id:
+            s["plays"]=s.get("plays",0)+1
+            break
+    save_songs(songs)
+    return jsonify({"ok":True})
 
 @app.route("/uploads/<path:filename>")
 def up(filename): return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
