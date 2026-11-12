@@ -137,4 +137,54 @@ async function upload(){
  let fd=new FormData(); fd.append('title',title); fd.append('artist',artist); fd.append('type',type);
  fd.append('cover_url',document.getElementById('cover').value);
  let f=document.getElementById('file').files[0]; if(f) fd.append('file',f);
- let cf=document.getElementById('
+ let cf=document.getElementById('coverFile').files[0]; if(cf) fd.append('coverFile',cf);
+ let r=await fetch('/upload',{method:'POST',body:fd}); let j=await r.json(); 
+ document.getElementById('status').innerText=j.message; 
+ if(j.success){ load(); document.getElementById('title').value=''; document.getElementById('cover').value=''; }
+}
+load();
+</script></body></html>
+    """
+
+@app.route("/api/songs")
+def api(): return jsonify(load_songs())
+
+@app.route("/api/play/<song_id>", methods=["POST"])
+def play(song_id):
+    songs=load_songs()
+    for s in songs:
+        if s["id"]==song_id:
+            s["plays"]=s.get("plays",0)+1
+            break
+    save_songs(songs)
+    return jsonify({"ok":True})
+
+@app.route("/uploads/<path:filename>")
+def up(filename): return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route("/upload", methods=["POST"])
+def upload():
+    title=request.form.get("title","").strip(); artist=request.form.get("artist","").strip()
+    type_ = request.form.get("type","SINGLE"); cover_url=request.form.get("cover_url","").strip()
+    if not title or not artist: return jsonify({"success":False,"message":"Titre et artiste requis"})
+    audio_filename=""; cover_filename="";
+    if "file" in request.files:
+        file=request.files["file"]
+        if file and file.filename:
+            ext=os.path.splitext(secure_filename(file.filename))[1]
+            audio_filename=f"{uuid.uuid4().hex}{ext}"
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], audio_filename))
+    if "coverFile" in request.files:
+        cfile=request.files["coverFile"]
+        if cfile and cfile.filename:
+            ext=os.path.splitext(secure_filename(cfile.filename))[1]
+            cover_filename=f"cover_{uuid.uuid4().hex}{ext}"
+            cfile.save(os.path.join(app.config['UPLOAD_FOLDER'], cover_filename))
+    songs=load_songs()
+    songs.insert(0,{"id":uuid.uuid4().hex[:8],"title":title,"artist":artist,"type":type_,
+                     "cover_file":cover_filename,"cover_url":cover_url,"file":audio_filename,"plays":0})
+    save_songs(songs)
+    return jsonify({"success":True,"message":f"✅ {type_} '{title}' publié avec sa cover! 🔥"})
+
+if __name__=="__main__":
+    app.run(host="0.0.0.0",port=int(os.environ.get("PORT",5000)))
